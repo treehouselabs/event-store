@@ -22,17 +22,34 @@ class SimpleUpcasterChain implements UpcasterInterface
     /**
      * Upcasts via a chain of upcasters.
      *
-     * @inheritdoc
+     * @return array|SerializedEvent[]
      */
     public function upcast(SerializedEvent $event, UpcastingContext $context)
     {
+        $result = [];
+        $events = [$event];
+
         foreach ($this->upcasters as $upcaster) {
-            if ($upcaster->supports($event)) {
-                $event = $upcaster->upcast($event, $context);
+            $result = [];
+
+            foreach ($events as $event) {
+                if ($upcaster->supports($event)) {
+                    $upcasted = $upcaster->upcast($event, $context);
+
+                    // TODO: deprecate support of non array values by upcasters
+                    if (!is_array($upcasted)) {
+                        $result[] = $upcasted;
+                        continue;
+                    }
+
+                    $result += $upcasted;
+                }
             }
+
+            $events = $result;
         }
 
-        return $event;
+        return $result;
     }
 
     /**

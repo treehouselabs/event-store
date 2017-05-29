@@ -238,7 +238,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
     }
 
     /**
-     * @param iterable $eventsFromStore
+     * @param array $eventsFromStore
      * @param mixed $id
      * @param int $fromVersion
      *
@@ -247,6 +247,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
     private function upcastAndDeserialize($eventsFromStore, $id, $fromVersion)
     {
         $eventsForStream = [];
+
         foreach ($eventsFromStore as $event) {
             $serializedEvent = new SerializedEvent(
                 $event['uuid'],
@@ -270,9 +271,26 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
                 $serializedEvent = $this->upcaster->upcast($serializedEvent, $context);
             }
 
-            $eventsForStream[] = $this->eventFactory->createFromSerializedEvent($serializedEvent);
+            $this->appendToEventsForStream($eventsForStream, $serializedEvent);
         }
 
         return new EventStream($eventsForStream);
+    }
+
+    /**
+     * @param $eventsForStream
+     * @param $serializedEvents
+     *
+     * @return array
+     */
+    private function appendToEventsForStream(&$eventsForStream, $serializedEvents)
+    {
+        if (!is_array($serializedEvents)) {
+            $serializedEvents = [$serializedEvents];
+        }
+
+        foreach ($serializedEvents as $serializedEvent) {
+            $eventsForStream[] = $this->eventFactory->createFromSerializedEvent($serializedEvent);
+        }
     }
 }

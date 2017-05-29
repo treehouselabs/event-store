@@ -128,10 +128,7 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
 
         $eventStream = $this->eventStore->getStream(self::UUID);
 
-        $this->assertEquals(
-            $totalEvents = 2,
-            count($eventStream)
-        );
+        $this->assertCount($totalEvents = 2, $eventStream);
 
         $events = iterator_to_array($eventStream);
 
@@ -202,10 +199,7 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
 
         $eventStream = $this->eventStore->getPartialStream(self::UUID, $fromVersion, $toVersion);
 
-        $this->assertEquals(
-            $totalEvents = 1,
-            count($eventStream)
-        );
+        $this->assertCount($totalEvents = 1, $eventStream);
     }
 
     /**
@@ -320,21 +314,50 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
         );
 
         $someUpcaster = new DummyUpcaster(function (SerializedEvent $e) {
-            return $e->getName() == 'Anything' && $e->getPayloadVersion() == 1;
+            return $e->getName() === 'Anything' && $e->getPayloadVersion() === 1;
         }, $upcastedEvent);
+
+        $multipleUpcastedEvents = [
+            $upcastedEvent = new SerializedEvent(
+                $upcastedEvent->getId(),
+                $upcastedEvent->getName(),
+                '{"payload":"json", "with": "extra"}',
+                $upcastedEvent->getPayloadVersion() + 1,
+                1,
+                new DateTime('2015-01-01 00:00:00')
+            ),
+            $extraUpcastedEvent = new SerializedEvent(
+                $upcastedEvent->getId(),
+                'ExtraAnything',
+                '{"data": true}',
+                1,
+                1,
+                new DateTime('2015-01-01 00:00:00')
+            ),
+        ];
+
+        $someMultiUpcaster = new DummyUpcaster(function (SerializedEvent $e) {
+            return $e->getName() === 'Anything' && $e->getPayloadVersion() === 2;
+        }, $multipleUpcastedEvents);
 
         $chain = new SimpleUpcasterChain();
         $chain->registerUpcaster($someUpcaster);
+        $chain->registerUpcaster($someMultiUpcaster);
 
         // test
 
         $eventStore->setUpcaster($chain);
 
-        $stream = $eventStore->getStream(self::UUID);
+        $stream = iterator_to_array($eventStore->getStream(self::UUID));
 
         $this->assertEquals(
             $eventFactory->createFromSerializedEvent($upcastedEvent),
-            iterator_to_array($stream)[0]
+            $stream[0]
+        );
+
+        $this->assertEquals(
+            $eventFactory->createFromSerializedEvent($extraUpcastedEvent),
+            $stream[1]
         );
     }
 
