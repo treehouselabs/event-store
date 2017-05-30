@@ -38,11 +38,12 @@ class SimpleUpcasterChain implements UpcasterInterface
 
                     // TODO: deprecate support of non array values by upcasters
                     if (!is_array($upcasted)) {
-                        $result[] = $upcasted;
-                        continue;
+                        $upcasted = [$upcasted];
                     }
 
-                    $result += $upcasted;
+                    foreach ($upcasted as $_upcasted) {
+                        $result[] = $_upcasted;
+                    }
                 }
             }
 
