@@ -13,7 +13,7 @@ class SimpleUpcasterChainTest extends \PHPUnit_Framework_TestCase
      */
     public function it_chains_upcasters()
     {
-        $event = new SerializedEvent(self::UUID, 'Foo', ['key' => 'value'], 2, 1, new \DateTime('2017-05-29 19:00:00'));
+        $event = [new SerializedEvent(self::UUID, 'Foo', ['key' => 'value'], 2, 1, new \DateTime('2017-05-29 19:00:00'))];
 
         $multipleEvents = [
             new SerializedEvent(self::UUID, 'Foo', [], 3, 1, new \DateTime('2017-05-29 19:00:00')),
@@ -26,7 +26,7 @@ class SimpleUpcasterChainTest extends \PHPUnit_Framework_TestCase
                 return true;
             }, $event)
         );
-        $upcasterChain->registerUpcaster( new DummyUpcaster(function (SerializedEvent $e) {
+        $upcasterChain->registerUpcaster(new DummyUpcaster(function (SerializedEvent $e) {
             return $e->getName() === 'Foo' && $e->getPayloadVersion() === 2;
         }, $multipleEvents));
 
@@ -44,5 +44,31 @@ class SimpleUpcasterChainTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('Spliced', $events[1]->getName());
         $this->assertEquals(['key' => 'value'], $events[1]->getPayload());
         $this->assertEquals(1, $events[1]->getPayloadVersion());
+    }
+
+    /**
+     * @test
+     */
+    public function it_supports_non_collection_return_from_upcaster()
+    {
+        $event = new SerializedEvent(self::UUID, 'Foo', ['key' => 'value'], 2, 1, new \DateTime('2017-05-29 19:00:00'));
+        $event2 = new SerializedEvent(self::UUID, 'Foo', [], 3, 1, new \DateTime('2017-05-29 19:00:00'));
+
+        $upcasterChain = new SimpleUpcasterChain();
+        $upcasterChain->registerUpcaster(
+            new DummyUpcaster(function (SerializedEvent $e) {
+                return true;
+            }, $event)
+        );
+        $upcasterChain->registerUpcaster(new DummyUpcaster(function (SerializedEvent $e) {
+            return $e->getName() === 'Foo' && $e->getPayloadVersion() === 2;
+        }, $event2));
+
+        $upcastedEvent = $upcasterChain->upcast(
+            $this->prophesize(SerializedEvent::class)->reveal(),
+            $this->prophesize(UpcastingContext::class)->reveal()
+        );
+
+        $this->assertEquals([$event2], $upcastedEvent);
     }
 }

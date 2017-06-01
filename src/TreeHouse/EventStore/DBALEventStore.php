@@ -287,7 +287,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
     {
         // TODO: remove support of non array values by upcasters in next major release
         if (!is_array($serializedEvents)) {
-            trigger_error(
+            @trigger_error(
                 'Upcasters need to return an array collection of upcasted events, ' .
                 'non array return values are deprecated and support will be removed in the next major release',
                 E_USER_DEPRECATED
