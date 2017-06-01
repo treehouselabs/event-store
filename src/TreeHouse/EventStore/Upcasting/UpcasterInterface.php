@@ -10,7 +10,7 @@ interface UpcasterInterface
      * @param SerializedEvent  $event
      * @param UpcastingContext $context
      *
-     * @return SerializedEvent
+     * @return SerializedEvent|array|SerializedEvent[]
      */
     public function upcast(SerializedEvent $event, UpcastingContext $context);
 
