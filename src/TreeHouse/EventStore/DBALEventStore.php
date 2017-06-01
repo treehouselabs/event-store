@@ -9,10 +9,9 @@ use TreeHouse\EventStore\Upcasting\SimpleUpcasterChain;
 use TreeHouse\EventStore\Upcasting\UpcasterAwareInterface;
 use TreeHouse\EventStore\Upcasting\UpcasterInterface;
 use TreeHouse\EventStore\Upcasting\UpcastingContext;
-use TreeHouse\Serialization\SerializableInterface;
 use TreeHouse\Serialization\SerializerInterface;
 
-class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterface
+class DBALEventStore implements UpcasterAwareInterface
 {
     /**
      * @var UpcasterInterface
@@ -113,116 +112,6 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
                     ]
                 );
             }
-
-            $this->connection->commit();
-        } catch (DBALException $exception) {
-            $this->connection->rollBack();
-
-            throw new EventStoreException($exception->getMessage());
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function remove($aggregateId, $version)
-    {
-        $this->connection->beginTransaction();
-
-        try {
-            $s = $this->connection->prepare(
-                'DELETE FROM event_store
-                WHERE version = :version
-                AND uuid = :uuid'
-            );
-            $s->bindValue('version', $version);
-            $s->bindValue('uuid', $aggregateId);
-            $s->execute();
-
-            $s = $this->connection->prepare(
-                'UPDATE event_store
-                SET version = version - 1
-                WHERE version > :version
-                AND uuid = :uuid
-                ORDER BY version ASC'
-            );
-            $s->bindValue('version', $version);
-            $s->bindValue('uuid', $aggregateId);
-            $s->execute();
-
-            $this->connection->commit();
-        } catch (DBALException $exception) {
-            $this->connection->rollBack();
-
-            throw new EventStoreException($exception->getMessage());
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function insertBefore($aggregateId, $version, array $events)
-    {
-        $this->connection->beginTransaction();
-
-        try {
-            // first create some space
-            $s = $this->connection->prepare(
-                sprintf(
-                    'UPDATE event_store
-                    SET version = version + %d
-                    WHERE version >= :version
-                    AND uuid = :uuid
-                    ORDER BY version DESC',
-                    count($events)
-                )
-            );
-            $s->bindValue('version', $version);
-            $s->bindValue('uuid', $aggregateId);
-            $s->execute();
-
-            // secondly insert new events
-            foreach ($events as $event) {
-                $this->connection->insert(
-                    'event_store',
-                    [
-                        'uuid' => $event->getId(),
-                        'name' => $event->getName(),
-                        'payload' => $this->serializer->serialize(
-                            $event->getPayload()
-                        ),
-                        'payload_version' => $event->getPayloadVersion(),
-                        'version' => $version++,
-                        'datetime_created' => $event->getDate()->format('Y-m-d H:i:s'),
-                    ]
-                );
-            }
-
-            $this->connection->commit();
-        } catch (DBALException $exception) {
-            $this->connection->rollBack();
-
-            throw new EventStoreException($exception->getMessage());
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function updateEventPayload(Event $originalEvent, SerializableInterface $payload)
-    {
-        $this->connection->beginTransaction();
-
-        try {
-            $this->connection->update(
-                'event_store',
-                ['payload' => $this->serializer->serialize($payload)],
-                [
-                    'uuid' => $originalEvent->getId(),
-                    'name' => $originalEvent->getName(),
-                    'version' => $originalEvent->getVersion(),
-                ]
-            );
 
             $this->connection->commit();
         } catch (DBALException $exception) {
