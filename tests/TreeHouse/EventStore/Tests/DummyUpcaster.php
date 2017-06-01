@@ -14,15 +14,15 @@ class DummyUpcaster implements UpcasterInterface
     protected $eventMatcher;
 
     /**
-     * @var SerializedEvent
+     * @var SerializedEvent|array|SerializedEvent[]
      */
     protected $returnValue;
 
     /**
-     * @param callable        $eventMatcher
-     * @param SerializedEvent $returnValue
+     * @param callable                                $eventMatcher
+     * @param SerializedEvent|array|SerializedEvent[] $returnValue
      */
-    public function __construct(callable $eventMatcher, SerializedEvent $returnValue)
+    public function __construct(callable $eventMatcher, $returnValue)
     {
         $this->eventMatcher = $eventMatcher;
         $this->returnValue = $returnValue;
