@@ -5,6 +5,7 @@ All Notable changes to `event-store` will be documented in this file
 # 2.0
 
 * Removed MutableEventStoreInterface (issue #5)
+* Removed support for PHP <7.1 (issue #12)
 
 # 1.2
 
