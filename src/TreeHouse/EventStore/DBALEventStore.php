@@ -124,6 +124,8 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
 
     /**
      * @inheritdoc
+     *
+     * @deprecated will be removed in 2.0
      */
     public function remove($aggregateId, $version)
     {
@@ -160,6 +162,8 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
 
     /**
      * @inheritdoc
+     *
+     * @deprecated will be removed in 2.0
      */
     public function insertBefore($aggregateId, $version, array $events)
     {
@@ -208,6 +212,8 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
 
     /**
      * @inheritdoc
+     *
+     * @deprecated will be removed in 2.0
      */
     public function updateEventPayload(Event $originalEvent, SerializableInterface $payload)
     {
