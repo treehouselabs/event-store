@@ -36,6 +36,7 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 - [Jeroen Fiege][link-fieg]
 - [Mark van Duijker][link-mvanduijker]
 - [Marco Janssen][link-marcojanssen]
+- [Hidde Beydals][link-hiddeco]
 - [All Contributors][link-contributors]
 
 
@@ -56,3 +57,4 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [link-fieg]: https://github.com/fieg
 [link-mvanduijker]: https://github.com/mvanduijker
 [link-marcojanssen]: https://github.com/marcojanssen
+[link-hiddeco]: https://github.com/hiddeco

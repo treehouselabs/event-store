@@ -8,6 +8,7 @@ use TreeHouse\EventStore\Tests\DummyUpcaster;
 class SimpleUpcasterChainTest extends \PHPUnit_Framework_TestCase
 {
     const UUID = '04928cbb-7062-4f4a-916f-105b43c54606';
+
     /**
      * @test
      */
@@ -21,6 +22,15 @@ class SimpleUpcasterChainTest extends \PHPUnit_Framework_TestCase
         ];
 
         $upcasterChain = new SimpleUpcasterChain();
+
+        // Will always return false, validates the chain loop does not break when an upcaster does not support
+        // the given event.
+        $upcasterChain->registerUpcaster(
+            new DummyUpcaster(function (SerializedEvent $e) {
+                return false;
+            }, null)
+        );
+
         $upcasterChain->registerUpcaster(
             new DummyUpcaster(function (SerializedEvent $e) {
                 return true;
