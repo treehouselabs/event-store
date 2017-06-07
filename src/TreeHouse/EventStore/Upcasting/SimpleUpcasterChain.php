@@ -36,6 +36,8 @@ class SimpleUpcasterChain implements UpcasterInterface
             $result = [];
 
             foreach ($events as $event) {
+                $upcasted = [$event];
+
                 if ($upcaster->supports($event)) {
                     $upcasted = $upcaster->upcast($event, $context);
 
@@ -49,9 +51,9 @@ class SimpleUpcasterChain implements UpcasterInterface
 
                         $upcasted = [$upcasted];
                     }
-
-                    array_push($result, ...$upcasted);
                 }
+
+                array_push($result, ...$upcasted);
             }
 
             $events = $result;

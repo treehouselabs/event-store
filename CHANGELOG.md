@@ -2,6 +2,9 @@
 
 All Notable changes to `event-store` will be documented in this file
 
+# 1.2.1
+* Fixed bug in `SimpleUpcasterChain` that would break the chain when a registered upcaster did not support a given event.
+
 # 1.2
 
 * Added support for upcasting to multiple events
