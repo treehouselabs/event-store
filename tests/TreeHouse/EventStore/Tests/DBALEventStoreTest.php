@@ -59,8 +59,7 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
         $this->eventStore = new DBALEventStore(
             $this->connection->reveal(),
             $this->serializer->reveal(),
-            $this->eventFactory->reveal(),
-            'configured_event_store'
+            $this->eventFactory->reveal()
         );
     }
 
@@ -183,7 +182,6 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
 
         $this->connection->executeQuery(
             Argument::that(function($arg) {
-                Assert::assertContains('configured_event_store', $arg);
                 Assert::assertContains('AND (version > :version_from)', $arg);
                 Assert::assertContains('AND (version <= :version_to)', $arg);
 
@@ -213,14 +211,7 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
     public function it_appends_events()
     {
         $this->connection->beginTransaction()->shouldBeCalled();
-        $this->connection->insert(
-            Argument::that(function($arg) {
-                Assert::assertContains('configured_event_store', $arg);
-
-                return true;
-            }),
-            Argument::any()
-        )->shouldBeCalled();
+        $this->connection->insert(Argument::cetera())->shouldBeCalled();
         $this->connection->commit()->shouldBeCalled();
 
         $this->eventStore->append(
@@ -415,6 +406,37 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
             ],
             $stream
         );
+    }
+
+    /**
+     * @test
+     */
+    public function it_configures_table_name()
+    {
+        $eventStore = new DBALEventStore(
+            $this->connection->reveal(),
+            $this->serializer->reveal(),
+            $this->eventFactory->reveal(),
+            $table = 'configured_event_store'
+        );
+
+        // Get partial
+        $this->statement->fetchAll()->willReturn([]);
+        $this->connection->createQueryBuilder()->willReturn(new QueryBuilder($this->connection->reveal()));
+        $this->connection->executeQuery(Argument::that(function($arg) use ($table) {
+            Assert::assertContains("FROM $table", $arg);
+
+            return true;
+        }), Argument::cetera())->willReturn($this->statement->reveal());
+
+        $eventStore->getPartialStream('id', 1);
+
+        // Append
+        $this->connection->beginTransaction()->shouldBeCalled();
+        $this->connection->insert(Argument::exact($table), Argument::any())->shouldBeCalled();
+        $this->connection->commit()->shouldBeCalled();
+
+        $eventStore->append(new EventStream([$this->getEvent(1)->reveal()]));
     }
 
     /**
