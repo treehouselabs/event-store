@@ -182,21 +182,18 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
 
         $this->connection->executeQuery(
             Argument::that(function($arg) {
-                Assert::assertContains('AND (version > :version_from)', $arg);
-                Assert::assertContains('AND (version <= :version_to)', $arg);
+            Assert::assertContains('AND (version > :version_from)', $arg);
+            Assert::assertContains('AND (version <= :version_to)', $arg);
 
-                return true;
-            }),
-            Argument::that(function($arg) use ($fromVersion, $toVersion) {
-                Assert::assertArraySubset([
-                    'version_from' => $fromVersion,
-                    'version_to' => $toVersion,
-                ], $arg);
+            return true;
+        }), Argument::that(function($arg) use ($fromVersion, $toVersion) {
+            Assert::assertArraySubset([
+                'version_from' => $fromVersion,
+                'version_to' => $toVersion,
+            ], $arg);
 
-                return true;
-            }),
-            Argument::cetera())->willReturn($this->statement->reveal()
-        );
+            return true;
+        }), Argument::cetera())->willReturn($this->statement->reveal());
 
         $this->serializer->deserialize('Test', '{"payload":"json"}')->willReturn(new stdClass());
 
