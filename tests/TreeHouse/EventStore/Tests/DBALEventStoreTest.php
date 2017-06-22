@@ -408,7 +408,7 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
     /**
      * @test
      */
-    public function it_configures_table_name()
+    public function it_uses_configured_table_name_on_fetch()
     {
         $eventStore = new DBALEventStore(
             $this->connection->reveal(),
@@ -427,6 +427,19 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
         }), Argument::cetera())->willReturn($this->statement->reveal());
 
         $eventStore->getPartialStream('id', 1);
+    }
+    
+    /**
+     * @test
+     */
+    public function it_uses_configured_table_name_on_append()
+    {
+        $eventStore = new DBALEventStore(
+            $this->connection->reveal(),
+            $this->serializer->reveal(),
+            $this->eventFactory->reveal(),
+            $table = 'configured_event_store'
+        );
 
         // Append
         $this->connection->beginTransaction()->shouldBeCalled();
