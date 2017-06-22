@@ -406,6 +406,50 @@ class DBALEventStoreTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * @test
+     */
+    public function it_uses_configured_table_name_on_fetch()
+    {
+        $eventStore = new DBALEventStore(
+            $this->connection->reveal(),
+            $this->serializer->reveal(),
+            $this->eventFactory->reveal(),
+            $table = 'configured_event_store'
+        );
+
+        // Get partial
+        $this->statement->fetchAll()->willReturn([]);
+        $this->connection->createQueryBuilder()->willReturn(new QueryBuilder($this->connection->reveal()));
+        $this->connection->executeQuery(Argument::that(function($arg) use ($table) {
+            Assert::assertContains("FROM $table", $arg);
+
+            return true;
+        }), Argument::cetera())->willReturn($this->statement->reveal());
+
+        $eventStore->getPartialStream('id', 1);
+    }
+    
+    /**
+     * @test
+     */
+    public function it_uses_configured_table_name_on_append()
+    {
+        $eventStore = new DBALEventStore(
+            $this->connection->reveal(),
+            $this->serializer->reveal(),
+            $this->eventFactory->reveal(),
+            $table = 'configured_event_store'
+        );
+
+        // Append
+        $this->connection->beginTransaction()->shouldBeCalled();
+        $this->connection->insert(Argument::exact($table), Argument::any())->shouldBeCalled();
+        $this->connection->commit()->shouldBeCalled();
+
+        $eventStore->append(new EventStream([$this->getEvent(1)->reveal()]));
+    }
+
+    /**
      * @param $version
      * @param string $uuid
      * @param string $name
