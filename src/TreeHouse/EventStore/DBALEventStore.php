@@ -35,16 +35,27 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
     private $eventFactory;
 
     /**
+     * @var string
+     */
+    private $tableName;
+
+    /**
      * @param Connection          $connection
      * @param SerializerInterface $serializer
      * @param EventFactory        $eventFactory
+     * @param string              $tableName
      */
-    public function __construct(Connection $connection, SerializerInterface $serializer, EventFactory $eventFactory)
-    {
+    public function __construct(
+        Connection $connection,
+        SerializerInterface $serializer,
+        EventFactory $eventFactory,
+        $tableName = 'event_store'
+    ) {
         $this->connection = $connection;
         $this->serializer = $serializer;
         $this->eventFactory = $eventFactory;
         $this->upcaster = new SimpleUpcasterChain();
+        $this->tableName = $tableName;
     }
 
     /**
@@ -68,7 +79,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
     {
         $qb = $this->connection->createQueryBuilder()
             ->select('uuid, name, payload, payload_version, version, datetime_created')
-            ->from('event_store')
+            ->from($this->tableName)
             ->where('uuid = :uuid')
             ->andWhere('version > :version_from')
             ->orderBy('version', 'ASC')
@@ -100,7 +111,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
             /** @var $event Event */
             foreach ($eventStream as $event) {
                 $this->connection->insert(
-                    'event_store',
+                    $this->tableName,
                     [
                         'uuid' => $event->getId(),
                         'name' => $event->getName(),
@@ -133,20 +144,26 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
 
         try {
             $s = $this->connection->prepare(
-                'DELETE FROM event_store
-                WHERE version = :version
-                AND uuid = :uuid'
+                sprintf(
+                    'DELETE FROM %s
+                    WHERE version = :version
+                    AND uuid = :uuid',
+                    $this->tableName
+                )
             );
             $s->bindValue('version', $version);
             $s->bindValue('uuid', $aggregateId);
             $s->execute();
 
             $s = $this->connection->prepare(
-                'UPDATE event_store
-                SET version = version - 1
-                WHERE version > :version
-                AND uuid = :uuid
-                ORDER BY version ASC'
+                sprintf(
+                    'UPDATE %s
+                    SET version = version - 1
+                    WHERE version > :version
+                    AND uuid = :uuid
+                    ORDER BY version ASC',
+                    $this->tableName
+                )
             );
             $s->bindValue('version', $version);
             $s->bindValue('uuid', $aggregateId);
@@ -173,11 +190,12 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
             // first create some space
             $s = $this->connection->prepare(
                 sprintf(
-                    'UPDATE event_store
+                    'UPDATE %s
                     SET version = version + %d
                     WHERE version >= :version
                     AND uuid = :uuid
                     ORDER BY version DESC',
+                    $this->tableName,
                     count($events)
                 )
             );
@@ -188,7 +206,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
             // secondly insert new events
             foreach ($events as $event) {
                 $this->connection->insert(
-                    'event_store',
+                    $this->tableName,
                     [
                         'uuid' => $event->getId(),
                         'name' => $event->getName(),
@@ -221,7 +239,7 @@ class DBALEventStore implements MutableEventStoreInterface, UpcasterAwareInterfa
 
         try {
             $this->connection->update(
-                'event_store',
+                $this->tableName,
                 ['payload' => $this->serializer->serialize($payload)],
                 [
                     'uuid' => $originalEvent->getId(),
